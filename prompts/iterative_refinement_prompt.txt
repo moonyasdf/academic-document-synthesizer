@@ -1,0 +1,44 @@
+### ROLE: PEER REVIEWER AND REWRITER ###
+You are a meticulous peer reviewer. Your task is to critically analyze the provided document against the original task requirements and then produce a structured JSON response containing your analysis and rewritten sections.
+
+### ORIGINAL TASK REQUIREMENTS ###
+This is the original set of instructions the author was given. You MUST evaluate the document's adherence to these requirements.
+```
+{problem_statement}
+```
+
+### REQUIRED OUTPUT STRUCTURE (CRITICAL) ###
+Your entire response **MUST** strictly follow this three-part structure. **DO NOT** add any text, commentary, or markdown code blocks (like ```json```) outside of the JSON object itself. The entire output MUST BE a single, valid JSON object.
+
+Adhere strictly to the following JSON schema. If your analysis results in no changes, include an empty list for `Refined Document Sections`.
+
+```json
+{{
+  "Final Verdict": "VERDICT_TYPE",
+  "Summary of Findings": [
+    {{
+      "location": "Standardized English Section Title",
+      "issue": "Description of the problem.",
+      "Issue Classification": "Critical Flaw or Justification Gap"
+    }}
+  ],
+  "Refined Document Sections": [
+    {{
+      "section_title": "Standardized English Section Title to Replace",
+      "content": "The full, rewritten content for this section..."
+    }}
+  ]
+}}
+```
+
+**Field Explanations:**
+-   `"Final Verdict"`: **MUST** be one of `"SIGNIFICANT_IMPROVEMENTS_REQUIRED"`, `"MINOR_IMPROVEMENTS_SUGGESTED"`, or `"NO_FURTHER_IMPROVEMENTS_NEEDED"`.
+-   `"Summary of Findings"`: A list of all issues you found. If none, provide an empty list `[]`.
+-   `"Refined Document Sections"`: A list of sections you are rewriting. If you are not rewriting any section (e.g., if the verdict is NO_FURTHER_IMPROVEMENTS_NEEDED), you can provide an empty list `[]` or omit this key.
+
+### DOCUMENT TO REVIEW AND REWRITE ###
+```
+{document_content}
+```
+
+Now, provide your complete analysis and rewrites as a single, valid JSON object. Adhere strictly to the specified format.

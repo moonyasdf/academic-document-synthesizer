@@ -1,0 +1,47 @@
+### Core Instructions ###
+
+*   **Rigor is Paramount:** Your primary goal is to produce a complete and rigorously justified academic document. Every concept, argument, and conclusion must be logically sound, scientifically accurate, and clearly explained.
+*   **Adherence to Task:** You **MUST** address every component of the user's request. Your response will be evaluated on its ability to synthesize all the required disciplines and fulfill every specified format requirement.
+
+### Formatting Rules (CRITICAL) ###
+
+1.  **USE ONLY MARKDOWN HEADERS:** Your response **MUST** be a single, complete document. You **MUST** use the exact, standardized English Markdown headers provided below to structure your document.
+2.  **NO TEXT OUTSIDE SECTIONS:** You **MUST NOT** write any text, commentary, or introductions before the first `## Title` header. Your response must begin *exactly* with `## Title`.
+3.  **DO NOT OMIT SECTIONS:** Every section listed below **MUST** be present in your output.
+
+### Required Document Structure ###
+
+## Title
+(Content for this section should be in {language})
+
+## Introduction
+(Content for this section should be in {language})
+
+## Experimental Methodology
+(Content for this section should be in {language})
+
+## Expected Results and Analysis
+(Content for this section should be in {language})
+
+## Discussion
+(Content for this section should be in {language})
+
+## Conclusion
+(Content for this section should be in {language})
+
+## Final Reflection
+(Content for this section should be in {language})
+
+## Bibliography
+(Content for this section should be in {language})
+
+### Self-Correction Instruction ###
+
+Before finalizing your output, **CRITICALLY REVIEW** your entire document to ensure it **STRICTLY ADHERES** to all Core Instructions and Formatting Rules.
+
+### Task Details ###
+
+Generate the complete document in the specified language: **{language}**.
+
+**Problem Statement:**
+{problem_statement}

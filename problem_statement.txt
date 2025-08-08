@@ -1,0 +1,12 @@
+The objective of this activity is to synthesize and evaluate knowledge of optics, integrating it with the concepts of thermodynamics, electricity, and magnetism in an experimental investigation. To achieve this, you will design and carry out a hypothetical experimental investigation on an optical phenomenon (such as refraction or reflection on spherical surfaces), integrating concepts from the previous units. Subsequently, you will write a scientific article that presents your findings, discusses the implications of your results, and evaluates the validity of your initial hypotheses.
+
+Your research must be related to the following topics (previous units):
+
+- Thermodynamics: Celsius, Kelvin, Fahrenheit scales; Thermal expansion; Zeroth Law; Heat transfer; Joule's experiment; Phase change; Calorimetry; First and Second Laws of Thermodynamics.
+- Electrodynamics: Coulomb's Law; Electric Field; Gauss's Law; Ohm's Law; Series, parallel, and mixed circuits; Ampere's Law; Biot-Savart Law; Magnetic field; Force on a charge; Faraday's Law; Faraday-Lenz Law.
+- Optics: Dual nature of light; Reflection of Light; Geometric Optics; Refraction on spherical surfaces; Fermat's Principle and Hero's Principle.
+
+Output Format:
+- A structured academic document.
+- Include a final reflection comment (150 words).
+- Provide a bibliography in APA format with three reliable sources.

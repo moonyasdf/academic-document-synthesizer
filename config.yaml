@@ -1,0 +1,25 @@
+# --- Configuration for the Academic Document Synthesizer ---
+
+# API and Model Settings
+model_config:
+  # The API identifier for the Gemini 2.5 Pro series model
+  model_name: "gemini-2.5-pro"
+  # Low temperature for focused, coherent output
+  temperature: 0.1
+  # API endpoint for advanced features
+  api_endpoint: "https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+
+# Synthesis Process Control
+synthesis_config:
+  # Maximum number of refinement cycles to run if the agent doesn't stop itself
+  max_refinements: 5
+  # Number of consecutive "NO_FURTHER_IMPROVEMENTS_NEEDED" verdicts required to stop
+  confidence_threshold: 2
+
+# Debugging Settings
+# CRITICAL: Set debug_mode to true to save all raw LLM responses for analysis.
+# This will create a 'debug_logs' directory.
+debugging:
+  debug_mode: true
+  # Directory to store raw API responses when debug_mode is true
+  log_directory: "debug_logs"

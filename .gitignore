@@ -1,0 +1,17 @@
+# Entorno virtual de Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Archivos de salida y temporales
+output/
+debug_logs/
+*.checkpoint.md
+
+# Archivos del editor (ej. VSCode)
+.vscode/
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db

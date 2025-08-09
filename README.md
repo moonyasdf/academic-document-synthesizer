@@ -42,7 +42,7 @@ An AI-powered system that drafts and iteratively refines structured academic doc
 ## Prerequisites
 
 - Python 3.8+
-- Google Gemini API key
+- [Google Gemini API key](https://aistudio.google.com/apikey)
 - Install dependencies:
 ```bash
 pip install -r requirements.txt
@@ -220,5 +220,6 @@ API robustness:
   - The refiner prompt enforces a single JSON object; if issues persist, check `debug_logs/` for stray text
 - Section not replaced:
   - Ensure `section_title` matches the exact English header; content can be any supported language
+
 
 

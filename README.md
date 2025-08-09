@@ -1,4 +1,4 @@
-# Academic Document Synthesizer
+## Academic Document Synthesizer
 
 An AI-powered system that drafts and iteratively refines structured academic documents. It is optimized for Google’s Gemini models and uses a schema-validated JSON plan to drive safe, deterministic refinements. We drew inspiration from the [IMO 2025 Problem Solver repository](https://github.com/lyang36/IMO25) to create this repository.
 
@@ -220,6 +220,7 @@ API robustness:
   - The refiner prompt enforces a single JSON object; if issues persist, check `debug_logs/` for stray text
 - Section not replaced:
   - Ensure `section_title` matches the exact English header; content can be any supported language
+
 
 
 

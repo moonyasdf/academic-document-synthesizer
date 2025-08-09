@@ -32,10 +32,9 @@ An AI-powered system that drafts and iteratively refines structured academic doc
 ├── schemas.py
 ├── problem_statement.txt
 ├── prompts/
-│   ├── system_expert_prompt.txt
-│   ├── initial_synthesis_prompt.txt
-│   └── iterative_refinement_prompt.txt
-└── tests/ (if you run the provided test suite)
+    ├── system_expert_prompt.txt
+    ├── initial_synthesis_prompt.txt
+    └── iterative_refinement_prompt.txt
 ```
 
 ---
@@ -221,3 +220,4 @@ API robustness:
   - The refiner prompt enforces a single JSON object; if issues persist, check `debug_logs/` for stray text
 - Section not replaced:
   - Ensure `section_title` matches the exact English header; content can be any supported language
+

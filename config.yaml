@@ -9,6 +9,20 @@ model_config:
   # API endpoint for advanced features
   api_endpoint: "https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
 
+  # --- Safety Settings ---
+  # Controls content blocking. For non-sensitive academic content, it is safe 
+  # to set these to BLOCK_NONE to prevent false positives.
+  # Other options: BLOCK_ONLY_HIGH, BLOCK_MEDIUM_AND_ABOVE (default), BLOCK_LOW_AND_ABOVE
+  safety_settings:
+    - category: "HARM_CATEGORY_HARASSMENT"
+      threshold: "BLOCK_NONE"
+    - category: "HARM_CATEGORY_HATE_SPEECH"
+      threshold: "BLOCK_NONE"
+    - category: "HARM_CATEGORY_SEXUALLY_EXPLICIT"
+      threshold: "BLOCK_NONE"
+    - category: "HARM_CATEGORY_DANGEROUS_CONTENT"
+      threshold: "BLOCK_NONE"
+
 # Synthesis Process Control
 synthesis_config:
   # Maximum number of refinement cycles to run if the agent doesn't stop itself

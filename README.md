@@ -1,38 +1,27 @@
-# Academic Document Synthesizer
+### Academic Document Synthesizer
 
-An AI-powered tool for generating and refining structured academic documents, optimized to use Google's Gemini 2.5 Pro. This project is designed as a self-contained, minimal-dependency solver, inspired by the rigorous, logic-driven approach of state-of-the-art AI problem solvers.
+An AI-powered system that drafts and iteratively refines structured academic documents. It is optimized for Google’s Gemini models and uses a schema-validated JSON plan to drive safe, deterministic refinements.
 
- <!-- Opcional: Puedes crear un diagrama de flujo simple y subirlo a un host de imágenes como Imgur -->
+### What it does
 
-## Overview
+- Initial drafting: Generates a complete Markdown document using strict, standardized section headers.
+- Peer-review refinement loop: Requests a JSON-only “refinement plan” that identifies issues and returns full rewritten sections. The plan is validated with Pydantic before applying edits.
+- Intelligent termination: Stops after consecutive “no further improvements” verdicts.
+- Checkpointing: Saves progress after each successful step; can resume from interruptions.
+- Robust API handling: Concatenates multi-part responses; retries with backoff; structured warnings for blocked prompts.
+- Debugging: Optional raw-response logging for fast diagnosis.
 
-This system employs a sophisticated AI agent that performs a two-stage process, mimicking an expert academic workflow:
+### Key improvements in this version
 
-1.  **Initial Drafting**: Guided by a highly structured prompt, the agent first generates a complete, high-quality draft of an academic document based on a given problem statement.
-2.  **Peer-Review Refinement Loop**: The agent then enters an iterative cycle where it assumes the role of a meticulous "Academic Consultant." It analyzes the entire document against the original requirements, identifies flaws and gaps, and then generates a superior, rewritten version. This process repeats until a high standard of quality is met or a maximum number of cycles is reached.
+- JSON-only refinement: The first draft remains plain Markdown; refinement requests enforce application/json.
+- Stronger prompts: Refiner prompt redesigned to demand a single valid JSON object, exact section headers (English), and content language compliance.
+- Stricter replacement: Rewrites are applied by section title to prevent duplication and drift.
+- Test suite: Unit tests for schemas, JSON extraction, refinement application; an end-to-end test with a mocked API; optional validators.
+- Safety settings documentation: Clear reference and examples to configure Gemini safety filters.
 
-The system features intelligent termination, stopping automatically when it determines the document is of sufficient quality, making it efficient and autonomous.
+---
 
-## Key Features
-
-- **Optimized for Gemini 2.5 Pro**: Pre-configured to leverage the advanced reasoning capabilities of Gemini 2.5 Pro, using a low temperature (`0.1`) and a large `thinkingBudget` for focused, coherent, and high-quality output.
-- **Intelligent Termination**: The agent autonomously decides when to stop the refinement process based on its own quality assessment, requiring multiple consecutive "no improvements needed" verdicts to gain confidence.
-- **Robust Checkpointing**: Automatically saves progress after each successful refinement cycle to a temporary file. If the process is interrupted (e.g., API credit exhaustion, network error), it can be resumed seamlessly by running the same command again.
-- **Pydantic-based Validation**: Uses Pydantic schemas to validate the structure of the LLM's refinement plans, eliminating parsing errors and ensuring reliable operation.
-- **Config-Driven Behavior**: The entire process is controlled by a central `config.yaml` file, allowing easy customization of the model, synthesis parameters, and debugging options without touching the code.
-- **Debug Mode**: Includes an optional debug mode which saves all raw LLM responses to a `debug_logs/` directory for easy analysis and troubleshooting.
-- **User-Friendly Interaction**: Handles API key management gracefully (prioritizing environment variables but falling back to a secure prompt) and asks for the desired output language.
-
-## Prerequisites
-
-1.  **Python 3.7+**
-2.  **Google Gemini API Key**: Obtain one from [Google AI Studio](https://aistudio.google.com/app/apikey). Ensure your key has access to the `gemini-1.5-pro-latest` model.
-3.  **Required Python packages**: Install them using the provided file.
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-## Project Structure
+## Project structure
 
 ```
 .
@@ -41,96 +30,194 @@ The system features intelligent termination, stopping automatically when it dete
 ├── run_synthesis.py
 ├── agent.py
 ├── schemas.py
-├── requirements.txt
 ├── problem_statement.txt
-└── prompts/
-    ├── system_expert_prompt.txt
-    ├── initial_synthesis_prompt.txt
-    └── iterative_refinement_prompt.txt
+├── prompts/
+│   ├── system_expert_prompt.txt
+│   ├── initial_synthesis_prompt.txt
+│   └── iterative_refinement_prompt.txt
+└── tests/ (if you run the provided test suite)
 ```
 
-## Setup & Configuration
+---
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/your-username/academic-document-synthesizer.git
-    cd academic-document-synthesizer
-    ```
+## Prerequisites
 
-2.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+- Python 3.8+
+- Google Gemini API key
+- Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-3.  **Configure the API Key:** You have two options:
-    *   **(Recommended) Set an environment variable:**
-        ```bash
-        # On Linux/macOS
-        export GOOGLE_API_KEY="your_api_key_here"
-        
-        # On Windows PowerShell
-        $env:GOOGLE_API_KEY="your_api_key_here"
-        ```
-    *   **Or, run the script:** If the environment variable is not found, the script will prompt you to enter the key securely.
+Set your API key:
+- Windows PowerShell:
+```powershell
+$env:GOOGLE_API_KEY="YOUR_API_KEY"
+```
+- Linux/macOS:
+```bash
+export GOOGLE_API_KEY="YOUR_API_KEY"
+```
 
-4.  **Edit `problem_statement.txt`:** Replace the content of this file with the specific academic task you want the agent to perform.
+If not set, the program will securely prompt for the key.
 
-5.  **(Optional) Edit `config.yaml`:**
-    *   To disable debug logging, set `debug_mode: false`.
-    *   To change the number of refinement cycles, adjust `max_refinements`.
-    *   To modify the model, update `model_name`.
+---
+
+## Configuration
+
+Edit `config.yaml` to control model, synthesis behavior, and debugging. Example:
+
+```yaml
+model_config:
+  model_name: "gemini-2.5-pro"
+  temperature: 0.1
+  api_endpoint: "https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+
+  # Optional: Safety settings for Gemini (see “Safety settings” below)
+  # Remove or adjust per your use case. Defaults here are permissive for academic content.
+  safety_settings:
+    - category: "HARM_CATEGORY_HARASSMENT"
+      threshold: "BLOCK_NONE"
+    - category: "HARM_CATEGORY_HATE_SPEECH"
+      threshold: "BLOCK_NONE"
+    - category: "HARM_CATEGORY_SEXUALLY_EXPLICIT"
+      threshold: "BLOCK_NONE"
+    - category: "HARM_CATEGORY_DANGEROUS_CONTENT"
+      threshold: "BLOCK_NONE"
+    - category: "HARM_CATEGORY_CIVIC_INTEGRITY"
+      threshold: "BLOCK_NONE"
+
+synthesis_config:
+  max_refinements: 5
+  confidence_threshold: 2
+
+debugging:
+  debug_mode: true
+  log_directory: "debug_logs"
+```
+
+Notes:
+- The agent enforces application/json only for refinement requests. The initial draft is plain Markdown.
+- If `debug_mode` is true, raw model responses are saved to `debug_logs/`.
+
+---
+
+## Safety settings (Gemini)
+
+Gemini supports adjustable safety filters by category:
+
+- HARM_CATEGORY_HARASSMENT
+- HARM_CATEGORY_HATE_SPEECH
+- HARM_CATEGORY_SEXUALLY_EXPLICIT
+- HARM_CATEGORY_DANGEROUS_CONTENT
+- HARM_CATEGORY_CIVIC_INTEGRITY
+
+Block thresholds (API values):
+- BLOCK_NONE: Never block
+- BLOCK_ONLY_HIGH: Block only when the probability is HIGH
+- BLOCK_MEDIUM_AND_ABOVE: Block when probability is MEDIUM or HIGH
+- BLOCK_LOW_AND_ABOVE: Block when probability is LOW, MEDIUM, or HIGH
+- HARM_BLOCK_THRESHOLD_UNSPECIFIED: Use model defaults
+
+How this project uses them:
+- You can define `safety_settings` in `config.yaml` (as in the example above). They are sent with each request if present.
+- You can start permissive (BLOCK_NONE) for academic content and tighten categories as needed.
+- If a prompt is blocked, the agent prints the block reason (e.g., `promptFeedback.blockReason`) and skips or retries as configured.
+
+Example: stricter hate speech and harassment, permissive elsewhere:
+```yaml
+model_config:
+  safety_settings:
+    - category: "HARM_CATEGORY_HATE_SPEECH"
+      threshold: "BLOCK_LOW_AND_ABOVE"
+    - category: "HARM_CATEGORY_HARASSMENT"
+      threshold: "BLOCK_MEDIUM_AND_ABOVE"
+    - category: "HARM_CATEGORY_SEXUALLY_EXPLICIT"
+      threshold: "BLOCK_ONLY_HIGH"
+    - category: "HARM_CATEGORY_DANGEROUS_CONTENT"
+      threshold: "BLOCK_ONLY_HIGH"
+    - category: "HARM_CATEGORY_CIVIC_INTEGRITY"
+      threshold: "BLOCK_MEDIUM_AND_ABOVE"
+```
+
+Troubleshooting blocked content:
+- If `finishReason` is SAFETY, the candidate is withheld. The agent logs the finish reason and can retry.
+- Review the `debug_logs/` to see the context and tune settings or prompts accordingly.
+
+---
 
 ## Usage
 
-The main entry point for the synthesizer is `run_synthesis.py`.
+Standard run (reads `problem_statement.txt`, asks language, writes to `output/final_document.md`):
+```bash
+python run_synthesis.py
+```
 
-1.  Navigate to the project directory in your terminal.
-2.  Run the script.
+With a custom task and output:
+```bash
+python run_synthesis.py my_task.txt -o results/paper.md
+```
 
-    ```bash
-    python run_synthesis.py [problem_file] [options]
-    ```
+Safeguard: temporarily raise the maximum refinement cycles:
+```bash
+python run_synthesis.py -r 10
+```
 
-The script will first ask for your API key (if not set as an environment variable) and then for your preferred language.
+Resume an interrupted run:
+- Re-run the exact same command; the agent resumes from the checkpoint (a hidden file alongside the output).
 
-**Arguments & Options:**
+---
 
--   `problem_file` (optional): Path to the problem statement file. Defaults to `problem_statement.txt`.
--   `--output <path>`, `-o <path>`: Specify the path for the final Markdown document. Defaults to `output/final_document.md`.
--   `--max-refinements <N>`, `-r <N>`: Override the `max_refinements` setting from `config.yaml`. Acts as a safeguard limit for the refinement loop.
+## Document structure and prompts
 
-**Example Workflows:**
+- Headers are standardized in English and must appear exactly as:
+  - Title
+  - Introduction
+  - Experimental Methodology
+  - Expected Results and Analysis
+  - Discussion
+  - Conclusion
+  - Final Reflection
+  - Bibliography
 
--   **Standard Run:**
-    ```bash
-    python run_synthesis.py
-    ```
+- Content is generated in the user-selected language.
+- Refinement JSON schema (enforced by Pydantic):
+  - Final Verdict: SIGNIFICANT_IMPROVEMENTS_REQUIRED | MINOR_IMPROVEMENTS_SUGGESTED | NO_FURTHER_IMPROVEMENTS_NEEDED
+  - Summary of Findings: list of { location, issue, Issue Classification }, where Issue Classification is Critical Flaw | Justification Gap
+  - Refined Document Sections: list of { section_title, content }
 
--   **Run with a different task and higher refinement limit:**
-    ```bash
-    python run_synthesis.py my_other_task.txt -r 10
-    ```
+---
 
--   **Resume an interrupted run:** Simply execute the exact same command you used before. The agent will automatically find the checkpoint file and resume the process.
-    ```bash
-    # If this command was interrupted...
-    python run_synthesis.py --output results/my_paper.md
-    
-    # ...just run it again to resume.
-    python run_synthesis.py --output results/my_paper.md
-    ```
+## How it works (high level)
 
-## How It Works
+1) Load config from `config.yaml` and request API key (or use env var).
+2) Initial draft:
+   - Uses `initial_synthesis_prompt.txt`
+   - Returns plain Markdown (no JSON)
+   - Saves a checkpoint
+3) Refinement cycles:
+   - Uses `iterative_refinement_prompt.txt`
+   - Requests JSON-only plan; validates with Pydantic
+   - Applies full section rewrites by header match
+   - Intelligent termination after consecutive final verdicts
+4) Finalize:
+   - Writes the final Markdown to the output file
+   - Removes checkpoint
 
-1.  **Configuration Loading:** `run_synthesis.py` loads all settings from `config.yaml`.
-2.  **Initialization:** It prompts the user for necessary inputs (API key, language) and initializes the `SynthesisAgent`.
-3.  **Drafting/Resuming:** The agent first checks for a checkpoint file. If found, it loads the existing document. If not, it uses the powerful `initial_synthesis_prompt.txt` to generate a high-quality first draft. A checkpoint is saved.
-4.  **Refinement Loop:**
-    a. The agent sends the current document and the original problem statement to the LLM using the `iterative_refinement_prompt.txt`. This prompt instructs the model to act as a consultant and return a **JSON object** defined by the Pydantic `RefinementPlan` schema.
-    b. The agent receives the raw text response and, if in debug mode, saves it to `debug_logs/`.
-    c. It extracts the JSON block from the response.
-    d. It uses `RefinementPlan.model_validate_json()` to parse and validate the JSON. If this fails, it reports the error and skips the cycle.
-    e. It checks the `final_verdict` from the validated plan. If the verdict is `NO_FURTHER_IMPROVEMENTS_NEEDED` for a configured number of consecutive times, the loop terminates early.
-    f. It applies the changes from the `refined_sections` to the document by reconstructing it, which prevents duplication errors.
-    g. If changes were made, a new checkpoint is saved.
-5.  **Final Output:** The final refined document is saved to the specified output file, and the temporary checkpoint file is deleted.
+API robustness:
+- Concatenates multi-part responses
+- Retries on transient network errors with exponential backoff
+- Logs blocked content reasons and empty candidate warnings
+
+---
+
+## Troubleshooting
+
+- Empty or blocked responses:
+  - Check console messages for `promptFeedback.blockReason` or `finishReason: SAFETY`
+  - Use `debug_mode: true` to inspect raw responses
+  - Adjust safety settings or temperature and retry
+- JSON parsing errors:
+  - The refiner prompt enforces a single JSON object; if issues persist, check `debug_logs/` for stray text
+- Section not replaced:
+  - Ensure `section_title` matches the exact English header; content can be any supported language

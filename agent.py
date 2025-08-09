@@ -28,6 +28,8 @@ class SynthesisAgent:
         self.api_url = self.config['model_config']['api_endpoint'].format(model_name=model_name)
         self.headers = {"Content-Type": "application/json", "X-goog-api-key": self.api_key}
         
+        self.safety_settings = self.config.get('model_config', {}).get('safety_settings')
+        
         if self.config['debugging']['debug_mode']:
             self.debug_log_dir = self.config['debugging']['log_directory']
             os.makedirs(self.debug_log_dir, exist_ok=True)
@@ -42,6 +44,8 @@ class SynthesisAgent:
         for filename in prompt_files:
             try:
                 with open(os.path.join("prompts", filename), 'r', encoding='utf-8') as f:
+                    # --- CORRECTION IS HERE ---
+                    # We access the first element of the tuple returned by os.path.splitext
                     key = os.path.splitext(filename)[0].replace('_prompt', '')
                     prompts[key] = f.read()
             except FileNotFoundError:
@@ -64,7 +68,7 @@ class SynthesisAgent:
         except IOError as e:
             print(f"  -> Warning: Could not save debug log. Error: {e}")
 
-    def _call_api(self, system_prompt, user_prompt, temperature=None, retries=3):
+    def _call_api(self, system_prompt, user_prompt, temperature=None, response_mime_type=None, retries=3):
         """Sends a request to the Gemini API, using settings from config."""
         temp = temperature if temperature is not None else self.config['model_config']['temperature']
         
@@ -77,21 +81,49 @@ class SynthesisAgent:
                 "thinkingConfig": {"thinkingBudget": 32768}
             },
         }
+        
+        if self.safety_settings:
+            payload['safetySettings'] = self.safety_settings
+        if response_mime_type:
+            payload['generationConfig']['responseMimeType'] = response_mime_type
+        
         for attempt in range(retries):
             try:
                 response = requests.post(self.api_url, headers=self.headers, data=json.dumps(payload))
                 response.raise_for_status()
-                candidates = response.json().get('candidates')
-                if candidates and candidates[0].get('content', {}).get('parts'):
-                    return candidates[0]['content']['parts'][0]['text']
-                else:
-                    print(f"API Warning: Unexpected response format or empty content. Full response: {response.json()}")
-                    finish_reason = candidates[0].get('finishReason', 'UNKNOWN')
-                    print(f"Finish Reason: {finish_reason}")
+                response_data = response.json()
+                
+                if not response_data.get('candidates'):
+                    prompt_feedback = response_data.get('promptFeedback', {})
+                    block_reason = prompt_feedback.get('blockReason')
+                    if block_reason:
+                        print(f"API ERROR: The prompt was blocked. Reason: '{block_reason}'.")
+                    else:
+                        print(f"API Warning: Response is empty, no candidates found. Full response: {response_data}")
                     return ""
+
+                candidate = response_data['candidates'][0]
+                if 'content' in candidate and 'parts' in candidate['content']:
+                    texts = [p.get('text', '') for p in candidate['content']['parts'] if 'text' in p]
+                    return ''.join(texts)
+                else:
+                    finish_reason = candidate.get('finishReason', 'UNKNOWN')
+                    print(f"API Warning: Received an empty content response. Finish Reason: '{finish_reason}'.")
+                    if finish_reason == 'SAFETY':
+                        print("This is likely due to the safety filters. You can adjust them in config.yaml.")
+                    print(f"Full candidate object: {candidate}")
+                    return ""
+
             except requests.exceptions.RequestException as e:
-                print(f"API Error (Attempt {attempt + 1}/{retries}): {e}")
+                print(f"API Network Error (Attempt {attempt + 1}/{retries}): {e}")
+                if hasattr(e, 'response') and e.response is not None:
+                    try:
+                        print(f"Error Body: {e.response.json()}")
+                    except json.JSONDecodeError:
+                        print(f"Error Body: {e.response.text}")
                 time.sleep(2 ** attempt)
+        
+        print("API call failed after multiple retries.")
         return None
     
     def _save_checkpoint(self, document_content):
@@ -132,38 +164,40 @@ class SynthesisAgent:
         print("Requesting context-aware peer review and refinement plan from LLM...")
         user_prompt = self.prompts['iterative_refinement'].format(
             problem_statement=self.problem_statement,
-            document_content=document_content
+            document_content=document_content,
+            language=self.language
         )
-        plan_raw = self._call_api(self.prompts['system_expert'], user_prompt, temperature=0.2)
-        if plan_raw:
+        plan_raw = self._call_api(
+            self.prompts['system_expert'],
+            user_prompt,
+            temperature=0.2,
+            response_mime_type="application/json"
+        )
+        if plan_raw is not None:
             self._save_debug_log("refinement_plan", plan_raw)
-            print("Refinement plan (raw) received.")
+            if plan_raw:
+                print("Refinement plan (raw) received.")
         return plan_raw
 
-    # --- NUEVO: Función para extraer JSON del Markdown ---
     def _extract_json_from_markdown(self, text):
         """Extracts JSON content enclosed in markdown code blocks."""
-        # Regex to find blocks of code, optionally prefixed by 'json' or '```'
         json_pattern = re.compile(r'```(?:json)?\s*\n([\s\S]*?)\n```', re.DOTALL)
         match = json_pattern.search(text)
         if match:
             return match.group(1).strip()
         
-        # Fallback: if no markdown blocks found, try to parse the entire text as JSON
         text = text.strip()
         if text.startswith('{') and text.endswith('}'):
             return text
         
         return None
-    # --- FIN DE _extract_json_from_markdown ---
 
     def _apply_refinements(self, document, refinement_plan: RefinementPlan):
-        """Aplica las secciones refinadas del plan Pydantic al documento."""
+        """Applies the refined sections from the Pydantic plan to the document."""
         if not refinement_plan.refined_sections:
             print("No sections were rewritten in this cycle.")
             return document, False
 
-        # Usamos el parser de reconstrucción que ya era robusto
         original_sections = {}
         section_pattern = re.compile(r'(##\s+([^\n]+))\n([\s\S]*?)(?=\n##\s+|\Z)')
         for match in section_pattern.finditer(document):
@@ -196,19 +230,25 @@ class SynthesisAgent:
 
         confidence_threshold = self.config['synthesis_config']['confidence_threshold']
         consecutive_final_versions = 0
-        i = 0 # Initialize i for the final log message
+        i = 0
 
         for i in range(max_refinements):
             print(f"\n--- Starting Refinement Cycle {i + 1}/{max_refinements} ---")
             
-            plan_raw = self._request_refinement_plan(document)
-            
+            plan_raw = None
+            for attempt in range(3):
+                plan_raw = self._request_refinement_plan(document)
+                if plan_raw:
+                    break
+                else:
+                    print(f"  -> Empty or failed response from API. Retrying... ({attempt + 1}/3)")
+                    time.sleep(2)
+
             if not plan_raw:
-                print("Skipping refinement cycle due to API failure.")
+                print("Skipping refinement cycle after multiple failed attempts to get a valid response.")
                 consecutive_final_versions = 0
                 continue
             
-            # --- MODIFICACIÓN CLAVE: Extraer el JSON antes de la validación ---
             plan_json_str = self._extract_json_from_markdown(plan_raw)
 
             if not plan_json_str:
@@ -218,12 +258,10 @@ class SynthesisAgent:
             
             try:
                 refinement_plan = RefinementPlan.model_validate_json(plan_json_str)
-                
                 verdict = refinement_plan.final_verdict
                 print(f"Reviewer Verdict: {verdict}")
                 print("\n--- LLM's Summary of Findings ---")
                 for finding in refinement_plan.summary_of_findings:
-                    # Imprimimos los hallazgos de forma limpia
                     print(f"* Location: {finding.location}, Classification: {finding.classification}")
                     print(f"  Issue: {finding.issue}")
                 print("---------------------------------\n")
@@ -232,12 +270,11 @@ class SynthesisAgent:
                     consecutive_final_versions += 1
                     print(f"Confidence counter for completion is now {consecutive_final_versions}/{confidence_threshold}.")
                     if consecutive_final_versions >= confidence_threshold:
-                        print("\n✅ Agent has confirmed document quality and task fulfillment. Terminating refinement process early.")
+                        print("\n✅ Agent is confident in the final version. Terminating refinement.")
                         break
                 else:
                     consecutive_final_versions = 0
                 
-                # Aplicamos los refinamientos
                 document, changes_made = self._apply_refinements(document, refinement_plan)
                 
                 if changes_made:

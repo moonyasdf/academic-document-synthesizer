@@ -4,20 +4,20 @@ An AI-powered system that drafts and iteratively refines structured academic doc
 
 ### What it does
 
-- Initial drafting: Generates a complete Markdown document using strict, standardized section headers.
-- Peer-review refinement loop: Requests a JSON-only “refinement plan” that identifies issues and returns full rewritten sections. The plan is validated with Pydantic before applying edits.
-- Intelligent termination: Stops after consecutive “no further improvements” verdicts.
-- Checkpointing: Saves progress after each successful step; can resume from interruptions.
-- Robust API handling: Concatenates multi-part responses; retries with backoff; structured warnings for blocked prompts.
-- Debugging: Optional raw-response logging for fast diagnosis.
+- **Initial drafting**: Generates a complete Markdown document using strict, standardized section headers.
+- **Peer-review refinement loop**: Requests a JSON-only “refinement plan” that identifies issues and returns full rewritten sections. The plan is validated with Pydantic before applying edits.
+- **Intelligent termination**: Stops after consecutive “no further improvements” verdicts.
+- **Checkpointing**: Saves progress after each successful step; can resume from interruptions.
+- **Robust API handling**: Concatenates multi-part responses; retries with backoff; structured warnings for blocked prompts.
+- **Debugging**: Optional raw-response logging for fast diagnosis.
 
 ### Key improvements in this version
 
-- JSON-only refinement: The first draft remains plain Markdown; refinement requests enforce application/json.
-- Stronger prompts: Refiner prompt redesigned to demand a single valid JSON object, exact section headers (English), and content language compliance.
-- Stricter replacement: Rewrites are applied by section title to prevent duplication and drift.
-- Test suite: Unit tests for schemas, JSON extraction, refinement application; an end-to-end test with a mocked API; optional validators.
-- Safety settings documentation: Clear reference and examples to configure Gemini safety filters.
+- **JSON-only refinement**: The first draft remains plain Markdown; refinement requests enforce application/json.
+- **Stronger prompts**: Refiner prompt redesigned to demand a single valid JSON object, exact section headers (English), and content language compliance.
+- **Stricter replacement**: Rewrites are applied by section title to prevent duplication and drift.
+- **Test suite**: Unit tests for schemas, JSON extraction, refinement application; an end-to-end test with a mocked API; optional validators.
+- **Safety settings documentation**: Clear reference and examples to configure Gemini safety filters.
 
 ---
 
@@ -220,6 +220,7 @@ API robustness:
   - The refiner prompt enforces a single JSON object; if issues persist, check `debug_logs/` for stray text
 - Section not replaced:
   - Ensure `section_title` matches the exact English header; content can be any supported language
+
 
 
 
